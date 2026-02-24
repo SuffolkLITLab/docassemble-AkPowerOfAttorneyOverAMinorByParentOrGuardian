@@ -4,11 +4,12 @@ comment: |
   ## == SME-related ==
 
   1. Does a notary cost money? How much? (Same in all states?)
+  1. Does this form have a form number? (Maybe PG-701?)
   1. Clarify term for decision-maker
   1. Initially print 2 documents? (instead of copying the signed doc later)? May be easier.
   1. Wording for abortion prohibited sections (shortened from form)
   1. For LA: abortion, marriage, adoption, child-protection also disallowed?
-  1. Military duration - the one that comes later or sooner?
+  1. Military member - does the shorter max date apply or the longer?
   1. What areas of law cover this (for metadata)?
   1. LA or TX form mentions legal ramifications for leaving children for long time. In AK too?
   1. Is it required that the attorney-in-fact be 18 years old or older?
@@ -20,11 +21,13 @@ comment: |
 
   ## == Technical ==
 
+  1. What branding package should we use?
   1. Mandates are not beinng listed in order despite omap.
   1. DOCX not underlining underlined items. Just mac Pages app?
   1. The table rows may be keeping their original size instead of adjusting to contents. Check. An issue with Pages?
   1. The table lines are appearing at the top of the page.
   1. Discuss: Use `children` obj or not? This will confuse other interviews for the user because, as a user, they may have children that are older or for whom they don't want to get parental delegation. Also, should it be `users[0].children`?
+  1. Research how to detect a "checkin" so we can let a user know when TARGET template is refreshing, but not yet refreshed (in the case of long server delays).
 
   ## == General ==
 
@@ -38,7 +41,11 @@ comment: |
   1. Should we include a translation of the final doc? There's extra info on there and they'll see what each field is supposed to contain.
   1. Change terms and conditions? MA? What should be on that first page?
   1. Just tell max time instead of having them pick an end time?
-  1. Military language - "look on your activation/deployment orders”.
+  1. On the start/end date page, how do we get the user to blur the end date field without pressing "next" so that they can see a warning message that might pop up?
+  1. Do end-expiry date field on next page so we can use the start date as the lower limit?
+  1. Would it be helpful or overly obstructive to have an "over max expiry date" alert before moving to the next page?
+  1. Should the saved start/end dates, if they exist, be written in the reminder as 05/02/2026 or May 02, 2026?
+  1. Edit screen for `parental_delegation_dates`: For military, show only the latest of start date and deployment end date?
 
   ## === DAL (shared question lib, etc.) ===
 
@@ -48,6 +55,7 @@ comment: |
 include:
   - docassemble.AssemblyLine:assembly_line.yml
   - docassemble.ALAnyState:any_state.yml
+  # - docassemble.AKA2JBranding:custom_organization.yml
   - docassemble.MassAccess:massaccess.yml
 ---
 metadata:
@@ -107,10 +115,10 @@ metadata:
   authors:
     - "@plocket"
   original_form:
-    - https://opa.doa.alaska.gov/media/dasedrhk/delegation.pdf
+    - https://public.courts.alaska.gov/web/forms/docs/pg-701.pdf
   original_form_published_on: ""
-  help_page_url: https://opa.doa.alaska.gov/minor-guardianship/
-  help_page_title: Minor (Child) Guardianship
+  help_page_url: https://courts.alaska.gov/shc/family/shcpoa.htm
+  help_page_title: Powers of Attorney & Health Care Directives
   allowed_courts: []
   typical_role: "na"
   al_weaver_version: "1.11.0"
@@ -164,25 +172,27 @@ code: |
   user_ask_role = "na"
   users.gather()
   set_parts(subtitle=str(users))
-  set_progress(16)
+  set_progress(10)
   # Discuss: Better to ask about the caregiver first, so we can kick out on age
   # Not quite as motivation aware as asking about the children first
   caregivers.gather()
   caregivers[0].is_major
-  set_progress(32)
+  set_progress(20)
   ## Alternative flow:
   # if parental_delegation_children.target_number > 1:
   #   parental_delegation_children.target_number = num_parental_delegation_children_multi_minors
   parental_delegation_children.gather()
-  set_progress(48)
+  set_progress(40)
   users[0].address.address
   users[0].phone_number
-  set_progress(60)
+  set_progress(50)
   caregivers[0].address.address
   caregivers[0].phone_number
+  set_progress(60)
   parental_delegation_mandates
   set_progress(75)
   users[0].is_in_US_military
+  parental_delegation_dates
   set_progress(90)
   interview_order_ak_power_of_attorney_over_a_minor_by_parent_or_guardian = True
 ---
@@ -192,12 +202,12 @@ comment: |
   Delete mandatory: True to include in another form
 mandatory: True
 code: |
-  al_intro_screen
+  # al_intro_screen
   ak_power_of_attorney_over_a_minor_by_parent_or_guardian_intro
   interview_order_ak_power_of_attorney_over_a_minor_by_parent_or_guardian
   signature_date
   # Avoid storing data
-  ak_power_of_attorney_over_a_minor_by_parent_or_guardian_download
+  ak_power_of_attorney_over_a_minor_by_parent_or_guardian_download_plain
 ---
 id: Alaska_power_of_attorney_over_a_minor_by_parent_or_guardian
 continue button field: ak_power_of_attorney_over_a_minor_by_parent_or_guardian_intro
@@ -207,6 +217,7 @@ subquestion: |
   This form helps a parent or guardian in Alaska let a family member or other person temporarily make important decisions for their children by making a document called "Alaska power of attorney over a minor by parent or guardian".
 
   For example, if you are a parent and need to leave the United States, the person you choose can make decisions about your children's medical situations, schools, and other situations.
+  
 
   You do not need to go to court to use this form, so it may be a good alternative to a guardianship or custody case.
 
@@ -367,14 +378,168 @@ fields:
   - "Are you in the US military?": users[0].is_in_US_military
     datatype: yesnoradio
 ---
-id: add children
-event: add_children
+id: parental delegation dates
+continue button field: parental_delegation_dates
+check in: calc_max_delegation_expiry
 question: |
-  Your children
-review:
-  - Edit: parental_delegation_children.revisit
-    button: |
-      ${ revisit_delegation_children }
+  Start and end dates
+subquestion: |
+  When you see the notary you will have to use a pen to write the start and end dates for ${ caregivers[0].name.full() }'s permission to make decisions. If you answer these questions we will make a document for you that will remind you about those dates. You can skip this question and decide later.
+
+  There are rules about how long ${ caregivers[0].name.full() } can make decisions for ${ comma_and_list( parental_delegation_children ) }. ${ f"You are in the US military so { caregivers[0].name.full() } can have permission for either up to 1 year, or until 30 days after the end date on your deployment orders." if users[0].is_in_US_military else f"{ caregivers[0].name.full() } can have permission for up to 1 year." }
+fields:
+  - "Do you want to pick dates now or later?": decide_delegation_dates_later
+    required: False
+    datatype: radio
+    choices:
+      - Now: False
+      - Later: True
+  - "When do you want ${ caregivers[0].name.full() } to start making decisions?": delegation_start_date
+    required: False
+    datatype: ThreePartsDate
+    alMin: ${ today().format('MM/dd/yyyy') }
+    hide if: decide_delegation_dates_later
+  
+  # Military. There will always be an end date on their
+  # deployment order
+  - note: |
+      The latest end date you can pick depends on the end date written on your deployment order.
+    hide if: decide_delegation_dates_later
+    show if:
+      code: users[0].is_in_US_military
+  - Do you have your deployment order to look at?: users[0].has_deployment_order
+    required: False
+    datatype: yesnoradio
+    hide if: decide_delegation_dates_later
+    show if:
+      code: users[0].is_in_US_military
+  - When is the end date on your deployment order?: users[0].deployment_end
+    required: False
+    show if: users[0].has_deployment_order
+    datatype: ThreePartsDate
+    alMin: ${ today().format('MM/dd/yyyy') }
+    
+  - note: |
+      [TARGET delegation_expiry_help]
+    hide if: decide_delegation_dates_later
+  - "When do you want ${ caregivers[0].name.full() } to stop making decisions?": delegation_end_date
+    # Never require even if "start" is answered. We will use what they give us.
+    required: False
+    datatype: ThreePartsDate
+    alMin: ${ today().format('MM/dd/yyyy') }
+    hide if: decide_delegation_dates_later
+css: |
+  <style>
+    .datargetdelegation_expiry_help,
+    .delegation_end_date_help {
+      display: inline-block;
+      height: fit-content;
+      max-height: fit-content;
+      margin-bottom: 0;
+    }
+  </style>
+---
+id: delegation expiry limits
+event: calc_max_delegation_expiry
+# `sets:` not required, but avoids confusing red text in editor
+sets:
+  - delegation_duration_rule
+  - is_over_max_delegation_date
+  - live_delegation_end
+  - live_delegation_start
+  - live_deployment_end
+  - max_delegation_expiry
+comment: |
+  Language and flow possibilities:
+  Previous page: "Do you want help figuring out your start and end dates for the delegation?"
+  "Here is what your reminder will look like:"
+code: |
+  # How to show something different when the server is reloading but the user is seeing the same message? Need to detect checkin call or "change" event while on the page.
+  
+  import re
+
+  def as_date_or_None( some_str ):
+    """
+    Return a valid date input string as a date, otherwise None
+    Args:
+      some_str (str) A string that may or may not be a valid date
+    Returns:
+      (DADateTime or None)
+    """
+    if not some_str:
+      # Allow for input of None or empty string
+      return None
+    else:
+      # If error, fail silently. Default messages are enough.
+      try:
+        if re.fullmatch(r'\d\d?/\d\d?/\d\d\d\d', some_str ):
+          input_date = as_datetime( some_str )
+          if str( input_date ) != 'Bad date':
+            return input_date
+      except Exception as err:
+        return None
+    return None
+  
+
+  # === Get input values ===
+
+  live_delegation_start = as_date_or_None( action_argument('delegation_start_date') )
+  live_delegation_end = as_date_or_None( action_argument('delegation_end_date') )
+  live_deployment_end = as_date_or_None( action_argument('users[0].deployment_end') )
+  
+  live_has_deployment_order = action_argument('users[0].has_deployment_order')
+
+  # Defaults
+  delegation_duration_rule = "a year after the start date"
+  if users[0].is_in_US_military:
+    delegation_duration_rule = f'{ delegation_duration_rule } or 30 days after the end date on your deployment orders'
+
+  # Actual end date maximum vals if possible
+  max_delegation_expiry = None
+  if live_delegation_start != None:
+    year_after_start = live_delegation_start.plus( years=1 )
+
+    if not users[0].is_in_US_military:
+      max_delegation_expiry = year_after_start
+  
+    else:
+      try:
+        if live_deployment_end.plus( days=30 ) >= year_after_start:
+          max_delegation_expiry = live_deployment_end.plus( days=30 )
+        else:
+          max_delegation_expiry = year_after_start
+      except:
+        pass
+
+  is_over_max_delegation_date = False
+  try:
+    if live_delegation_end > max_delegation_expiry:
+      is_over_max_delegation_date = True
+  except:
+    pass
+
+  max_delegation_expiry_msg
+---
+comment: |
+  We need another field to make the user click off of the end date so they can see their validation message.
+
+  `check in:` should have a `check in event:`
+target: delegation_expiry_help
+template: max_delegation_expiry_msg
+content: |
+  % if live_delegation_end and max_delegation_expiry and is_over_max_delegation_date:
+  <div class="delegation_end_date_help h-auto alert alert-warning" markdown=1>
+  <i class="fa-solid fa-face-frown"></i> **WARNING**: You must pick an end date **on or before** ${ delegation_duration_rule }.
+  % else:
+  <div class="delegation_end_date_help h-auto alert alert-info" markdown=1>
+  If you pick and end date, you must pick a date **on or before** ${ delegation_duration_rule }.
+  % endif
+  
+  % if live_delegation_start and (not users[0].is_in_US_military or (users[0].is_in_US_military and live_deployment_end)):
+  This permission will **start** on ${ live_delegation_start }, so you must **pick an end date on or before** ${ max_delegation_expiry }. You can also leave it blank.
+  % endif
+  
+  </div>
 ---
 id: ak power of attorney over a minor by parent or guardian review screen
 event: review_ak_power_of_attorney_over_a_minor_by_parent_or_guardian
@@ -390,14 +555,6 @@ review:
       ${ users[0].address.block() }[BR]
       **Contact information**:[BR]
       ${ showifdef( 'users[0].mobile_number' ) or showifdef( 'user[0].phone_number' ) or 'None' }
-  - Edit: users[0].is_in_US_military
-    button: |
-      **Military status**:
-      % if users[0].is_in_US_military:
-      You are a member of the US military
-      % else:
-      You are **not** in the US military
-      % endif
   - Edit: caregivers[0].name.first
     button: |
       ### Decision-maker
@@ -423,6 +580,25 @@ review:
       % endfor
       % if parental_delegation_mandates['other']:
       * ${ custom_mandates }
+      % endif
+  - Edit: users[0].is_in_US_military
+    button: |
+      **Military status**:
+      % if users[0].is_in_US_military:
+      You are a member of the US military
+      % else:
+      You are **not** in the US military
+      % endif
+  - Edit: parental_delegation_dates
+    button: |
+      % if defined('delegation_start_date') and delegation_start_date:
+      **Permission start date**: ${ delegation_start_date }[BR]
+      % endif
+      % if defined('users[0].deployment_end') and users[0].deployment_end:
+      **Deployment orders end date**: ${ delegation_start_date }
+      % endif
+      % if defined('delegation_end_date') and delegation_end_date:
+      **Permission end date**: ${ delegation_end_date }
       % endif
 ---
 continue button field: parental_delegation_children.revisit
@@ -451,6 +627,54 @@ edit:
   - birthdate
 confirm: True
 ---
+id: download ak_power_of_attorney_over_a_minor_by_parent_or_guardian plain
+event: ak_power_of_attorney_over_a_minor_by_parent_or_guardian_download_plain
+question: |
+  All done! :face-smile:
+subquestion: |
+  Thank you, ${ comma_and_list( users ) }. Your document is ready to download at the bottom of the page. Here is what you need to do next.
+
+  **Before you print the form:**
+  
+  1. [Look at the document at the bottom of the page](#documents) to make sure it is correct.
+  1. Tap the "Edit answers" button to fix any mistakes.
+
+  **Next steps:**
+  
+  1. Print 2 copies of the document.
+  1. Go to the [notary certified by Alaska](https://courtformsonline.org/guides/finding-and-using-a-notary).
+  % if decide_delegation_dates_later == True:
+  1. Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop. ${ "That time period can be up to 1 year or, if you need, it can be up to 30 days after your military duty ends" if users[0].is_in_US_military else "You can give them permission for up to a year" }.
+  % else:
+  1. Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop.${ f" You said you wanted permission to start on **{ delegation_start_date }**." if defined('delegation_start_date') and delegation_start_date else "" }${ f" You said you wanted permission to **end on { delegation_end_date }**." if defined('delegation_end_date') and delegation_end_date else "" }
+  % endif
+  1. Make sure you have filled out all the blank lines in the form.
+  1. You and ${ caregivers[0].name.full() } should both sign both documents in front of the Alaska notary.
+  1. Have the notary notarize and sign both documents.
+  1. Give one signed document to ${ caregivers[0].name.full() }.
+  1. Keep the other document for your records.
+
+  After that, ${ caregivers[0].name.full() } can show this document to prove they have permission to make decisions for ${ comma_and_list( parental_delegation_children ) }.
+
+  You may also want to:
+  
+  :phone: Add ${ caregivers[0].name.full() } as an emergency contact with the schools, doctors, and childcare provider.[BR]
+  :file-lines: Give ${ caregivers[0].name.full() } important documents, like birth certificates, insurance cards, and school or medical records.
+
+  ---
+
+  <div id="documents" style="display: hidden" aria-hidden="true"></div>
+  
+  ${ al_user_bundle.download_list_html() }
+
+  <p style="text-align: right;">
+  ${ action_button_html(url_action('review_ak_power_of_attorney_over_a_minor_by_parent_or_guardian'), label=':pencil: Edit answers', color='info', size="md") }
+  </p>
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=True) }
+
+progress: 100
+---
 id: download ak_power_of_attorney_over_a_minor_by_parent_or_guardian
 event: ak_power_of_attorney_over_a_minor_by_parent_or_guardian_download
 question: |
@@ -467,7 +691,11 @@ subquestion: |
   
   1. :print: :print: Print 2 copies of the document.
   1. :user-tie: Go to the [notary certified by Alaska](https://courtformsonline.org/guides/finding-and-using-a-notary).
+  % if decide_delegation_dates_later == True:
   1. :pen: Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop. ${ "That time period can be up to 1 year or, if you need, it can be up to 30 days after your military duty ends" if users[0].is_in_US_military else "You can give them permission for up to a year" }.
+  % else:
+  1. :pen: Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop.${ f" You said you wanted permission to start on **{ delegation_start_date }**." if defined('delegation_start_date') and delegation_start_date else "" }${ f" You said you wanted permission to **end on { delegation_end_date }**." if defined('delegation_end_date') and delegation_end_date else "" }
+  % endif
   1. :eye: Make sure you have filled out all the blank lines in the form.
   1. :signature: You and ${ caregivers[0].name.full() } should both sign both documents in front of the Alaska notary.
   1. :signature: Have the notary notarize and sign both documents.
