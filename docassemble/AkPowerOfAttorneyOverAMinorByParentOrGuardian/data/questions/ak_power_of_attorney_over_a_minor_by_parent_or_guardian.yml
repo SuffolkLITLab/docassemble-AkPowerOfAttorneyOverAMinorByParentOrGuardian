@@ -4,6 +4,7 @@ comment: |
   ## == SME-related ==
 
   1. Does a notary cost money? How much? (Same in all states?)
+  1. Who other than a notary can take oaths? Where is a link to official documentation on that?
   1. Does this form have a form number? (Maybe PG-701?)
   1. Clarify term for decision-maker
   1. Initially print 2 documents? (instead of copying the signed doc later)? May be easier.
@@ -16,7 +17,11 @@ comment: |
   1. Can the mandates always be custom? So we don't need both versions of the text?
   1. Can the user list their own additional mandates or are they just supposed to use the existing list and limit the items they choose?
   1. Should birth certificates and such be copies or originals?
-  1. Must the contact info be a phone number?
+  1. What are valid forms of id? And what is a link to more official information?
+  1. Does the prospective attorney-in-fact need a valid photo ID too?
+  1. If either of them doesn't have valid ID, should we offer the self-certification?
+  1. If the person can't find a notary and they can't fill out a certificate should we prevent them from moving forward?
+  1. Must the contact info be a phone number or can it be other contact info?
   1. Additional wording in doc: ONLY the following specific powers and responsibilities [SME: can we add this: regarding the care and custody of each minor child named above]. This delegation must not include the power or authority to consent to the marriage or adoption of the minor child, the performance or inducement of an abortion on or for the minor child, or the termination of parental rights to the minor child. [SME: can we add this: The specific powers and responsibilities are]:
 
   ## == Technical ==
@@ -24,17 +29,21 @@ comment: |
   1. What branding package should we use?
   1. Mandates are not beinng listed in order despite omap.
   1. DOCX not underlining underlined items. Just mac Pages app?
+  1. The ID info belongs to the `users[0]` obj. Does the notary info need to do so as well?
   1. The table rows may be keeping their original size instead of adjusting to contents. Check. An issue with Pages?
   1. The table lines are appearing at the top of the page.
   1. Discuss: Use `children` obj or not? This will confuse other interviews for the user because, as a user, they may have children that are older or for whom they don't want to get parental delegation. Also, should it be `users[0].children`?
   1. Research how to detect a "checkin" so we can let a user know when TARGET template is refreshing, but not yet refreshed (in the case of long server delays).
+  1. With `enable if:` why is the field enabled when relevant yesnomaybe question has no answer?
 
   ## == General ==
 
+  1. Should we ask them if they have a printer?
   1. Recommend stapler? How many people have staplers? I'm not sure I have staples.
   1. Put all contact methods in doc, or just phone?
   1. If not, use phone number as fallback for mobile?
   1. Get all caregiver contact info too? Or at least offer both mobile and phone?
+  1. Review flow of notary/id questions. I'm not sure we need to push so hard on the notary/id path.
   1. Ask about children 1 at a time? If as a group, how? Must have only minors, etc.
   1. In final document, put each signature on its own page so the tables don't look strange? Or keep as is?
   1. "Next Steps" doc - what should be in "Learn more"?
@@ -51,6 +60,8 @@ comment: |
 
   1. Weaver didn't need to set allowed courts, but left the comment.
   1. Add users[1+] contact methods question? Put in script above the individual `.phone_number` question with access via a continue button field called `x.get_contact_methods`?
+  1. Add users mobile to users.table
+  1. ThreePartsDate: When field not visible, hitting back and then forward won't move forward. Binary chop found this to be the problem.
 ---
 include:
   - docassemble.AssemblyLine:assembly_line.yml
@@ -78,13 +89,14 @@ metadata:
     
     1. Make sure you can print 2 copies of the final document.
     1. Decide how long you want the decision-maker to have permission to make the decisions. Unless you are in the US military it must be a year or less.
-    1. [Find a notary](https://courtformsonline.org/guides/finding-and-using-a-notary). Many times, someone can become a notary fairly easily. The notary must see you and the decision-maker sign the document and then they must stamp the document.
+    1. Figure out how to [find a notary](https://courtformsonline.org/guides/finding-and-using-a-notary). Many times, someone can become a notary fairly easily. The notary must see you and the decision-maker sign the document and then they must stamp the document.
     1. You will have to fill out some more of this form by hand when you meet with the notary.
     1. Choose the person who will make decisions for your children. The person must be 18 years old or older.
     1. Get that person's current address.
     
     When you are finished, you will need to:
-    
+
+    1. Print 2 copies of the document.
     1. Sign both documents in front of the [notary](https://courtformsonline.org/guides/finding-and-using-a-notary).
     1. Keep one signed copy for your records.
     1. Give the decision-maker a signed copy of the document.
@@ -173,11 +185,16 @@ code: |
   users.gather()
   set_parts(subtitle=str(users))
   set_progress(10)
-  # Discuss: Better to ask about the caregiver first, so we can kick out on age
+  notary
+  if not users[0].needs_TF_835:
+    users[0].has_valid_id
+  # Discuss: Better to ask about the caregiver first, so we can stop out on underage
   # Not quite as motivation aware as asking about the children first
   caregivers.gather()
   caregivers[0].is_major
-  set_progress(20)
+  if not users[0].needs_TF_835:
+    caregivers[0].has_valid_id
+  set_progress(25)
   ## Alternative flow:
   # if parental_delegation_children.target_number > 1:
   #   parental_delegation_children.target_number = num_parental_delegation_children_multi_minors
@@ -193,6 +210,7 @@ code: |
   set_progress(75)
   users[0].is_in_US_military
   parental_delegation_dates
+  caregivers.table
   set_progress(90)
   interview_order_ak_power_of_attorney_over_a_minor_by_parent_or_guardian = True
 ---
@@ -217,7 +235,6 @@ subquestion: |
   This form helps a parent or guardian in Alaska let a family member or other person temporarily make important decisions for their children by making a document called "Alaska power of attorney over a minor by parent or guardian".
 
   For example, if you are a parent and need to leave the United States, the person you choose can make decisions about your children's medical situations, schools, and other situations.
-  
 
   You do not need to go to court to use this form, so it may be a good alternative to a guardianship or custody case.
 
@@ -230,7 +247,7 @@ subquestion: |
 
   1. Make sure you can print 2 copies of the final document.
   1. Decide how long you want the decision-maker to have permission to make the decisions. Unless you are in the US military it must be a year or less.
-  1. [Find a notary](https://courtformsonline.org/guides/finding-and-using-a-notary). Many times, someone can become a notary fairly easily. The notary must see you and the decision-maker sign the document and then they must stamp the document.
+  1. Find someone who has the power to take oaths or [a notary](https://courtformsonline.org/guides/finding-and-using-a-notary) certified in Alaska. Many times, someone can become a notary fairly easily. The notary must see you and the decision-maker sign the document and then they must stamp the document.
   1. You will have to fill out some more of this form by hand when you meet with the notary.
   1. Choose the person who will make decisions for your children. The person must be 18 years old or older.
   1. Get that person's current address.
@@ -249,6 +266,66 @@ subquestion: |
   This authorization does not allow the new decision-maker to make decisions about abortion, your rights as a parent, or about the marriage or adoption of your children.
   
   You can cancel the agreement in writing at any time.
+---
+id: notary
+continue button field: notary
+question: |
+  Notary
+subquestion: |
+  You must **wait** to date and sign your document until you are in front of someone who has the power to take oaths, like [a notary public](https://courtformsonline.org/guides/finding-and-using-a-notary).
+  
+  * A court clerk can do this for free.
+  * Bring a valid photo ID with you.
+  * If you cannot get to a notary or someone with the power to take oaths, you can "self-certify." Use **Self-Certification (No Notary Available), TF-835**. You can [fill in the Self-Certification PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf).
+
+  These questions are to help you make a plan. We will add these answers to your reminder document. You can skip any of these questions if you want.
+fields:
+  # Notary
+  - "Will you use a notary or someone with the power to take oaths, or will you print and fill out the [Self Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
+    required: False
+    datatype: radio
+    choices:
+      - I will use a notary public or someone with the power to take oaths: False
+      - I will use the Self Certification form: True
+  - note: |
+      You can [read about how to find a notary here](https://courtformsonline.org/guides/finding-and-using-a-notary).
+    show if:
+      variable: users[0].needs_TF_835
+      is: False
+  - "So we can remind you later, what will be your next steps for getting your documents certified?": users[0].certification_next_steps
+    required: False
+---
+id: user ID
+if: not users[0].needs_TF_835
+question: |
+  Your ID
+subquestion: |
+  When you see a notary, bring a valid photo ID with you. Valid photo IDs include:
+
+  * A US drivers license
+  * A US passport
+  
+  These questions are to help you make a plan. We will add these answers to your reminder document. You can skip any of these questions if you want.
+fields:
+  - Do you have a valid photo ID with you now?: users[0].has_valid_id
+    datatype: yesnomaybe
+    required: False
+  # Do we need both of the following questions?
+  - Can you get or find a valid photo ID?: users[0].can_get_valid_id
+    datatype: yesnomaybe
+    required: False
+    js show if: |
+      val('users[0].has_valid_id') == "None" || val('users[0].has_valid_id') == false
+  - "So we can remind you later, what will be your next steps for getting a valid ID?": users[0].valid_id_next_steps
+    required: False
+    js show if: |
+      val('users[0].has_valid_id') == "None" || val('users[0].has_valid_id') == false
+  - "Do you need to print and fill out the [Self Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
+    datatype: radio
+    choices:
+      - I will still use a notary public or someone with the power to take oaths: False
+      - I will use the Self Certification form: True
+    required: False
 ---
 id: names of people
 sets:
@@ -279,6 +356,38 @@ fields:
 validation code: |
   if not caregivers[0].is_major:
     validation_error("The person who makes decisions for your children must be 18 years old or older. You need to go back and choose someone else.", field="caregivers[0].is_major")
+---
+id: id
+if: not users[0].needs_TF_835
+generic object: Individual
+question: |
+  ${ x.name.full() }'s ID
+subquestion: |
+  ${ x } should also bring a valid photo ID. Valid photo IDs include:
+
+  * A US drivers license
+  * A US passport
+  
+  These questions are to help you make a plan. We will add these answers to your reminder document. You can skip any of these questions if you want.
+fields:
+  - Does ${ x } have a valid photo ID with them now?: x.has_valid_id
+    datatype: yesnomaybe
+    required: False
+  - Can ${ x } get or find a valid photo ID?: x.can_get_valid_id
+    datatype: yesnomaybe
+    required: False
+    js show if: |
+      val('x.has_valid_id') == "None" || val('x.has_valid_id') == false
+  - "So we can remind you later, what will be your next steps for making sure ${ x } brings a valid photo ID?": x.valid_id_next_steps
+    required: False
+    js show if: |
+      val('x.has_valid_id') == "None" || val('x.has_valid_id') == false
+  - "Do you need to print and fill out the [Self Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
+    datatype: radio
+    choices:
+      - I will still use a notary public or someone with the power to take oaths: False
+      - I will use the Self Certification form: True
+    required: False
 ---
 # id: num children
 # question: |
@@ -546,41 +655,75 @@ event: review_ak_power_of_attorney_over_a_minor_by_parent_or_guardian
 question: |
   Review your answers
 review:
-  - Edit: users.revisit
+  - Edit:
+      - users[0].name.first
+      - users[0].address.address
+      - users[0].phone_number
+      - notary
+      - follow up:
+        - users[0].has_valid_id
+        - caregivers[0].has_valid_id
+      - users[0].is_in_US_military
     button: |
       ### Your information
-
-      **Name**: ${ users[0].name.full() }[BR]
-      **Address**:[BR]
-      ${ users[0].address.block() }[BR]
-      **Contact information**:[BR]
-      ${ showifdef( 'users[0].mobile_number' ) or showifdef( 'user[0].phone_number' ) or 'None' }
-  - Edit: caregivers[0].name.first
+  - Edit: users[0].name.first
     button: |
-      ### Decision-maker
-
-      **Name**: ${ caregivers[0].name.full() }[BR]
-      **Age**: 18 years old or older[BR]
-      **Address**:[BR]
-      ${ caregivers[0].address.block() }[BR]
-      **Contact information**:[BR]
-      ${ showifdef( 'caregivers[0].mobile_number' ) or showifdef( 'caregivers[0].phone_number' ) or 'None' }
-  - Edit: parental_delegation_children.revisit
+      **Name**: ${ users[0].name.full() }
+  - Edit: users[0].address.address
     button: |
-      **${ caregivers[0].name.full() } can make decisions for these children**
-
-      % for child in parental_delegation_children:
-      * ${ child.name.full() }, born ${ child.birthdate }
-      % endfor
-  - Edit: parental_delegation_mandates
+      **Address**:[BR]${ users[0].address.block() }
+  - Edit: users[0].phone_number
     button: |
-      **You want ${ caregivers[0].name.full() } to decide these for ${ 'your children' if parental_delegation_children.number_gathered() > 1 else parental_delegation_children[0].name.first }?**:
-      % for mandate in parental_delegation_mandates.true_values:
-      * ${ mandate }
-      % endfor
-      % if parental_delegation_mandates['other']:
-      * ${ custom_mandates }
+      **Phone number**: ${ users[0].mobile_number or users[0].phone_number }
+  # - Edit: users.revisit
+  #   button: |
+  #     ### Your information
+
+  #     **Name**: ${ users[0].name.full() }[BR]
+  #     **Address**:[BR]
+  #     ${ users[0].address.block() }[BR]
+  #     **Contact information**:[BR]
+  #     ${ showifdef( 'users[0].mobile_number' ) or showifdef( 'users[0].phone_number' ) or 'None' }
+  - Edit: notary
+    button: |
+      **Certification**
+      
+      % if users[0].needs_TF_835:
+      You plan to use the [Self-Certification (No Notary Available), TF-835 PDF](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) to certify your documents.
+      % else:
+      You plan to use a notary public or someone else who has the power to take oaths to certify your documents.
       % endif
+
+      % if users[0].certification_next_steps:
+      **To prepare to certify your documents you plan to:**[BR]
+      ${ users[0].certification_next_steps }
+      % endif
+  - Edit: users[0].has_valid_id
+    show if: not users[0].needs_TF_835
+    button: |
+      **Your photo ID:**
+
+      % if users[0].has_valid_id:
+      You have a valid photo ID.
+      % else:
+      
+      % if users[0].can_get_valid_id:
+      You plan to find a valid photo ID.
+      % else:
+      You plan go to a notary public (or someone else who has the power to take oaths) without a photo ID.
+      % endif
+
+      % if users[0].valid_id_next_steps:
+      **Your next steps regarding a valid photo ID:**[BR]
+      ${ users[0].valid_id_next_steps }
+      % endif
+      
+      % endif
+
+      Valid photo IDs include:
+
+        * A US drivers license
+        * A US passport
   - Edit: users[0].is_in_US_military
     button: |
       **Military status**:
@@ -589,16 +732,93 @@ review:
       % else:
       You are **not** in the US military
       % endif
-  - Edit: parental_delegation_dates
+  - note: |
+      ---
+  - Edit:
+      - caregivers[0].name.first
+      - caregivers[0].is_major
+      - caregivers[0].address.address
+      - caregivers[0].phone_number
+      - follow up:
+        - caregivers[0].has_valid_id
+    button: |
+      ### ${ caregivers[0].name.full() }'s information
+  - Edit: caregivers[0].name.first
+    button: |
+      **Name**: ${ caregivers[0].name.full() }
+  - Edit: caregivers[0].is_major
+    button: |
+      **Over 18**: ${ caregivers[0].is_major }
+  - Edit: caregivers[0].address.address
+    button: |
+      **Address**:[BR]${ caregivers[0].address.block() }
+  - Edit: caregivers[0].phone_number
+    button: |
+      **Phone number**: ${ caregivers[0].mobile_number or users[0].phone_number }
+  # - Edit: caregivers[0].revisit
+  #   button: |
+  #     ### Decision-maker
+
+  #     **Name**: ${ caregivers[0].name.full() }[BR]
+  #     **Age**: 18 years old or older[BR]
+  #     **Address**:[BR]
+  #     ${ caregivers[0].address.block() }[BR]
+  #     **Contact information**:[BR]
+  #     ${ showifdef( 'caregivers[0].mobile_number' ) or showifdef( 'caregivers[0].phone_number' ) or 'None' }
+  - Edit: caregivers[0].has_valid_id
+    show if: not users[0].needs_TF_835
+    button: |
+      ${ caregivers[0].has_valid_id }
+      ${ caregivers[0].can_get_valid_id }
+      ${ caregivers[0].valid_id_next_steps }
+  - note: |
+      ---
+  - Edit: parental_delegation_children.revisit
+    button: |
+      ### Your children
+      
+      **${ caregivers[0].name.full() } can make decisions for these children**
+
+      % for child in parental_delegation_children:
+      * ${ child.name.full() }, born ${ child.birthdate }
+      % endfor
+  - note: |
+      ---
+  - Edit:
+      - parental_delegation_mandates
+      - parental_delegation_dates
+    button: |
+      ### Decisions
+  - Edit:
+      - parental_delegation_mandates
+    button: |
+      **You want ${ caregivers[0].name.full() } to make these decisons for ${ 'your children' if parental_delegation_children.number_gathered() > 1 else parental_delegation_children[0].name.first }?**:
+      
+      % for mandate_key in parental_delegation_mandates.true_values():
+      * ${ parental_delegation_mandates_map[ mandate_key ] }
+      % endfor
+      % if parental_delegation_mandates['other']:
+      * ${ custom_mandates }
+      % endif
+  - Edit:
+      - parental_delegation_dates
     button: |
       % if defined('delegation_start_date') and delegation_start_date:
       **Permission start date**: ${ delegation_start_date }[BR]
+      % else:
+      **Permission start date**: You skipped choosing a start date.[BR]
       % endif
-      % if defined('users[0].deployment_end') and users[0].deployment_end:
-      **Deployment orders end date**: ${ delegation_start_date }
+      % if defined('users[0].deployment_end'):
+      % if users[0].deployment_end:
+      **Deployment orders end date**: ${ users[0].deployment_end }[BR]
+      % endif
+      % else:
+      **Deployment orders end date**: You skipped setting the end date that is on your deployment orders.[BR]
       % endif
       % if defined('delegation_end_date') and delegation_end_date:
       **Permission end date**: ${ delegation_end_date }
+      % else:
+      **Permission end date**: You skipped choosing an end date.
       % endif
 ---
 continue button field: parental_delegation_children.revisit
@@ -614,6 +834,28 @@ content: |
   ${ parental_delegation_children.table }
   
   ${ parental_delegation_children.add_action(label="Add a child") }
+---
+# # objects: |
+# #   - person_table_rows: DAList.using(object_type=DAObject, complete_attribute='done')
+# # ---
+# # code: |
+# #   person_table_rows.name = 'name'
+# ---
+# code: |
+#   person_table_rows = DAList.using(object_type=DAObject, elements=[{'name': 'name.first'}, {'address': 'address.address'}, {'phone': 'phone_number'}])
+# ---
+# generic object: ALIndividual
+# table: x.table
+# rows: person_table_rows
+# columns:
+#   - Prop: |
+#       x[ row_item.name ]
+#   - Val: |
+#       x[ row_item.address ]
+# edit:
+#   - name.first
+#   - address.address
+# confirm: True
 ---
 table: parental_delegation_children.table
 rows: parental_delegation_children
