@@ -5,6 +5,7 @@ comment: |
 
   1. Does a notary cost money? How much? (Same in all states?)
   1. Who other than a notary can take oaths? Where is a link to official documentation on that?
+  1. Must a notary be present when the user puts the dates on the document? Or can we add it to the document automatically during this interview?
   1. Does this form have a form number? (Maybe PG-701?)
   1. Clarify term for decision-maker
   1. Initially print 2 documents? (instead of copying the signed doc later)? May be easier.
@@ -55,6 +56,8 @@ comment: |
   1. Would it be helpful or overly obstructive to have an "over max expiry date" alert before moving to the next page?
   1. Should the saved start/end dates, if they exist, be written in the reminder as 05/02/2026 or May 02, 2026?
   1. Edit screen for `parental_delegation_dates`: For military, show only the latest of start date and deployment end date?
+  1. "Next steps" doc: Should we include deployment date there too?
+  2. "Next steps" doc: Should we include the start/end date rules even if the user chose to give us dates for reminders instead of choosing to pick their dates later?
 
   ## === DAL (shared question lib, etc.) ===
 
@@ -186,6 +189,7 @@ code: |
   set_parts(subtitle=str(users))
   set_progress(10)
   notary
+  users[0].certification_next_steps
   if not users[0].needs_TF_835:
     users[0].has_valid_id
   # Discuss: Better to ask about the caregiver first, so we can stop out on underage
@@ -276,23 +280,37 @@ subquestion: |
   
   * A court clerk can do this for free.
   * Bring a valid photo ID with you.
-  * If you cannot get to a notary or someone with the power to take oaths, you can "self-certify." Use **Self-Certification (No Notary Available), TF-835**. You can [fill in the Self-Certification PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf).
+  * If you cannot get to a notary or someone else with the power to take oaths, you can "self-certify." Use **Self-Certification (No Notary Available), TF-835**. You can [fill in the Self-Certification PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf).
 
   These questions are to help you make a plan. We will add these answers to your reminder document. You can skip any of these questions if you want.
 fields:
-  # Notary
-  - "Will you use a notary or someone with the power to take oaths, or will you print and fill out the [Self Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
+  - "Will you use a notary or someone with the power to take oaths, or will you print and fill out the [Self-Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
     required: False
     datatype: radio
     choices:
       - I will use a notary public or someone with the power to take oaths: False
-      - I will use the Self Certification form: True
+      - I will use the Self-Certification form: True
   - note: |
       You can [read about how to find a notary here](https://courtformsonline.org/guides/finding-and-using-a-notary).
     show if:
       variable: users[0].needs_TF_835
       is: False
-  - "So we can remind you later, what will be your next steps for getting your documents certified?": users[0].certification_next_steps
+---
+# Own page to make sure to ask for new val if notary val changes
+id: own certification next steps
+depends on:
+  - users[0].needs_TF_835
+question: |
+  Next steps for certification
+subquestion: |
+  % if users[0].needs_TF_835:
+  You plan to certify your documents with someone with the power to take oaths, like a notary.
+  % else:
+  You plan to certify your documents with the Self-Certification (No Notary Available) TF-835 form.
+  % endif
+  You can make a note here about what your next steps will be and we will put it on your reminder document. You can skip this.
+fields:
+  - What will your next steps be to prepare to certify your documents?: users[0].certification_next_steps
     required: False
 ---
 id: user ID
@@ -320,11 +338,11 @@ fields:
     required: False
     js show if: |
       val('users[0].has_valid_id') == "None" || val('users[0].has_valid_id') == false
-  - "Do you need to print and fill out the [Self Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
+  - "Do you need to print and fill out the [Self-Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
     datatype: radio
     choices:
       - I will still use a notary public or someone with the power to take oaths: False
-      - I will use the Self Certification form: True
+      - I will use the Self-Certification form: True
     required: False
 ---
 id: names of people
@@ -344,7 +362,7 @@ fields:
   - code: |
       caregivers[0].name_fields()
 ---
-# Also, this is sort of a trick question. But people check a checkbox automatically. But we can't change that and it's very jarring to be asked a trick question.
+# This is sort of a trick question, but people check checkboxes automatically. Still, trick questions are jarring
 id: Caregiver age
 question: |
   ${ caregivers[0].name.full() }'s age
@@ -382,11 +400,11 @@ fields:
     required: False
     js show if: |
       val('x.has_valid_id') == "None" || val('x.has_valid_id') == false
-  - "Do you need to print and fill out the [Self Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
+  - "Do you need to print and fill out the [Self-Certification TF-835 PDF here](https://public.courts.alaska.gov/web/forms/docs/tf-835.pdf) instead?": users[0].needs_TF_835
     datatype: radio
     choices:
       - I will still use a notary public or someone with the power to take oaths: False
-      - I will use the Self Certification form: True
+      - I will use the Self-Certification form: True
     required: False
 ---
 # id: num children
@@ -499,6 +517,7 @@ subquestion: |
 fields:
   - "Do you want to pick dates now or later?": decide_delegation_dates_later
     required: False
+    default: False
     datatype: radio
     choices:
       - Now: False
@@ -684,7 +703,9 @@ review:
   #     ${ users[0].address.block() }[BR]
   #     **Contact information**:[BR]
   #     ${ showifdef( 'users[0].mobile_number' ) or showifdef( 'users[0].phone_number' ) or 'None' }
-  - Edit: notary
+  - Edit:
+      - notary
+      - users[0].certification_next_steps
     button: |
       **Certification**
       
@@ -714,7 +735,7 @@ review:
       % endif
 
       % if users[0].valid_id_next_steps:
-      **Your next steps regarding a valid photo ID:**[BR]
+      **Your next steps to make sure you bring a valid photo ID:**[BR]
       ${ users[0].valid_id_next_steps }
       % endif
       
@@ -792,7 +813,7 @@ review:
   - Edit:
       - parental_delegation_mandates
     button: |
-      **You want ${ caregivers[0].name.full() } to make these decisons for ${ 'your children' if parental_delegation_children.number_gathered() > 1 else parental_delegation_children[0].name.first }?**:
+      **You want ${ caregivers[0].name.full() } to make these decisons for ${ 'your children' if parental_delegation_children.number_gathered() > 1 else parental_delegation_children[0].name.first }**:
       
       % for mandate_key in parental_delegation_mandates.true_values():
       * ${ parental_delegation_mandates_map[ mandate_key ] }
@@ -803,22 +824,22 @@ review:
   - Edit:
       - parental_delegation_dates
     button: |
-      % if defined('delegation_start_date') and delegation_start_date:
-      **Permission start date**: ${ delegation_start_date }[BR]
+      % if not decide_delegation_dates_later and delegation_start_date:
+      **Start date**: ${ delegation_start_date }[BR]
       % else:
-      **Permission start date**: You skipped choosing a start date.[BR]
+      **Start date**: You skipped choosing a start date.[BR]
       % endif
-      % if defined('users[0].deployment_end'):
+      % if users[0].is_in_US_military and not decide_delegation_dates_later and users[0].deployment_end:
       % if users[0].deployment_end:
       **Deployment orders end date**: ${ users[0].deployment_end }[BR]
-      % endif
       % else:
       **Deployment orders end date**: You skipped setting the end date that is on your deployment orders.[BR]
       % endif
-      % if defined('delegation_end_date') and delegation_end_date:
-      **Permission end date**: ${ delegation_end_date }
+      % endif
+      % if not decide_delegation_dates_later and delegation_end_date:
+      **End date**: ${ delegation_end_date }
       % else:
-      **Permission end date**: You skipped choosing an end date.
+      **End date**: You skipped choosing an end date.
       % endif
 ---
 continue button field: parental_delegation_children.revisit
@@ -835,28 +856,6 @@ content: |
   
   ${ parental_delegation_children.add_action(label="Add a child") }
 ---
-# # objects: |
-# #   - person_table_rows: DAList.using(object_type=DAObject, complete_attribute='done')
-# # ---
-# # code: |
-# #   person_table_rows.name = 'name'
-# ---
-# code: |
-#   person_table_rows = DAList.using(object_type=DAObject, elements=[{'name': 'name.first'}, {'address': 'address.address'}, {'phone': 'phone_number'}])
-# ---
-# generic object: ALIndividual
-# table: x.table
-# rows: person_table_rows
-# columns:
-#   - Prop: |
-#       x[ row_item.name ]
-#   - Val: |
-#       x[ row_item.address ]
-# edit:
-#   - name.first
-#   - address.address
-# confirm: True
----
 table: parental_delegation_children.table
 rows: parental_delegation_children
 columns:
@@ -871,6 +870,7 @@ confirm: True
 ---
 id: download ak_power_of_attorney_over_a_minor_by_parent_or_guardian plain
 event: ak_power_of_attorney_over_a_minor_by_parent_or_guardian_download_plain
+# Just checking if I've updated them in sync
 question: |
   All done! :face-smile:
 subquestion: |
@@ -888,7 +888,7 @@ subquestion: |
   % if decide_delegation_dates_later == True:
   1. Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop. ${ "That time period can be up to 1 year or, if you need, it can be up to 30 days after your military duty ends" if users[0].is_in_US_military else "You can give them permission for up to a year" }.
   % else:
-  1. Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop.${ f" You said you wanted permission to start on **{ delegation_start_date }**." if defined('delegation_start_date') and delegation_start_date else "" }${ f" You said you wanted permission to **end on { delegation_end_date }**." if defined('delegation_end_date') and delegation_end_date else "" }
+  1. Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop.${ f" You said you wanted permission to start on **{ delegation_start_date }**." if  not decide_delegation_dates_later and delegation_start_date else "" }${ f" You said you wanted permission to **end on { delegation_end_date }**." if not decide_delegation_dates_later and delegation_end_date else "" }
   % endif
   1. Make sure you have filled out all the blank lines in the form.
   1. You and ${ caregivers[0].name.full() } should both sign both documents in front of the Alaska notary.
@@ -936,7 +936,7 @@ subquestion: |
   % if decide_delegation_dates_later == True:
   1. :pen: Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop. ${ "That time period can be up to 1 year or, if you need, it can be up to 30 days after your military duty ends" if users[0].is_in_US_military else "You can give them permission for up to a year" }.
   % else:
-  1. :pen: Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop.${ f" You said you wanted permission to start on **{ delegation_start_date }**." if defined('delegation_start_date') and delegation_start_date else "" }${ f" You said you wanted permission to **end on { delegation_end_date }**." if defined('delegation_end_date') and delegation_end_date else "" }
+  1. :pen: Write the dates when you want ${ caregivers[0].name.full() } to start making decisions and when you want them to stop.${ f" You said you wanted permission to start on **{ delegation_start_date }**." if not decide_delegation_dates_later and delegation_start_date else "" }${ f" You said you wanted permission to **end on { delegation_end_date }**." if not decide_delegation_dates_later and delegation_end_date else "" }
   % endif
   1. :eye: Make sure you have filled out all the blank lines in the form.
   1. :signature: You and ${ caregivers[0].name.full() } should both sign both documents in front of the Alaska notary.
