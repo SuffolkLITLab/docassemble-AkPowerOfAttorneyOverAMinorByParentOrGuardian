@@ -175,6 +175,10 @@ objects:
   - parental_delegation_children: ALPeopleList.using(there_are_any=True)
 ---
 sections:
+  - get_started: Get started
+  - your_information: Your information
+  - notary_information: Notary  
+  - attorney_in_fact: Attorney in fact
   - review_ak_power_of_attorney_over_a_minor_by_parent_or_guardian: Review your answers
 ---
 #################### Interview order #####################
@@ -182,18 +186,23 @@ comment: |
   Controls order and branching logic for questions specific to this form
 id: interview_order_ak_power_of_attorney_over_a_minor_by_parent_or_guardian
 code: |
-  nav.set_section("review_ak_power_of_attorney_over_a_minor_by_parent_or_guardian")
+  nav.set_section("get_started")
   user_role = "na"
   user_ask_role = "na"
+  nav.set_section("your_information")
   users.gather()
   set_parts(subtitle=str(users))
   set_progress(10)
+
+  nav.set_section("notary_information")
   notary
   users[0].certification_next_steps
   if not users[0].needs_TF_835:
     users[0].has_valid_id
   # Discuss: Better to ask about the caregiver first, so we can stop out on underage
   # Not quite as motivation aware as asking about the children first
+
+  nav.set_section("attorney_in_fact")
   caregivers.gather()
   caregivers[0].is_major
   if not users[0].needs_TF_835:
@@ -216,6 +225,7 @@ code: |
   set_progress(85)
   parental_delegation_dates
   set_progress(90)
+  nav.set_section("review_ak_power_of_attorney_over_a_minor_by_parent_or_guardian")
   interview_order_ak_power_of_attorney_over_a_minor_by_parent_or_guardian = True
 ---
 ###################### Main order ######################
