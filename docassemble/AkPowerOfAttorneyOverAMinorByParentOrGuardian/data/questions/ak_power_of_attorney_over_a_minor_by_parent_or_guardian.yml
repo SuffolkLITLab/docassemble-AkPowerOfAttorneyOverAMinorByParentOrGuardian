@@ -189,9 +189,11 @@ code: |
   nav.set_section("get_started")
   user_role = "na"
   user_ask_role = "na"
+  nondelegable_decisions_notice
   nav.set_section("your_information")
   users.gather()
   set_parts(subtitle=str(users))
+  
   set_progress(10)
 
   nav.set_section("notary_information")
@@ -244,59 +246,58 @@ code: |
 code: |
   btn_legal_services = '<a href="https://courts.alaska.gov/shc/lawyer.htm" target="_blank" class="btn btn-info">Find a Lawyer</a>'
 ---
+terms: 
+  temporarily: |
+    No longer than one year.
+--- 
 id: Alaska_power_of_attorney_over_a_minor_by_parent_or_guardian
 continue button field: ak_power_of_attorney_over_a_minor_by_parent_or_guardian_intro
 question: |
   What does this interview do?
 subquestion: |
-  This interview helps you let a family member or another person temporarily make important decisions for your children. It can also make the form called "Alaska Power of Attorney Over a Minor by Parent or Guardian".
+  This interview helps you fill out a form that lets another adult {temporarily} make decisions for your children. You do not need to go to court. We will walk you through each step. 
 
-  ### Who can use this form?
+  #### What you will need
 
-  * If you will be out of the country.
-  * If you will be undergoing surgery.
-  * You will be on military duty.
+  1. A person you trust, who must be 18 or older. Have their current address ready.
+  2. A time limit. This form can last up to 1 year. If you are on active duty in the military, it can last longer.
+  3. A notary in Alaska. You and the decision-maker will both sign in front of a <a href="https://courtformsonline.org/guides/finding-and-using-a-notary" target="_blank" style="color: #0a58ca; text-decoration: underline;">notary</a>, so plan to bring 2 copies. 
 
   ${ collapse_template(longer_than_year_template) }
-
-
-  :clock: Most people take about 15 minutes to finish this form.[BR]
-  :lock: This tool will **not** save your information. If you close this page you may have to start this form all over again.
   
-  **Before you start**:
-
-  1. Make sure you can print 2 copies of the final document.
-  1. Decide how long you want the decision-maker to have permission to make the decisions. Unless you are in the US military it must be a year or less.
-  1. Find someone who has the power to take oaths or [a notary](https://courtformsonline.org/guides/finding-and-using-a-notary) certified in Alaska. Many times, someone can become a notary fairly easily. The notary must see you and the decision-maker sign the document and then they must stamp the document.
-  1. You will have to fill out some more of this form by hand when you meet with the notary.
-  1. Choose the person who will make decisions for your children. The person must be 18 years old or older.
-  1. Get that person's current address.
+  :clock: This takes about 15 minutes. Your answers are **not** saved. If you close this page, you may have to start over. 
   
-  When you are finished, you will need to:
+  ##### After you finish this interview
   
-  1. Sign both documents in front of the [notary](https://courtformsonline.org/guides/finding-and-using-a-notary).
-  1. Keep one signed copy for your records.
-  1. Give the decision-maker a signed copy of the document.
+  1. Print 2 copies.
+  2. Sign both copies in front of the notary. 
+  3. Keep one copy. Give the other to the decision-maker
+    
+  **You can cancel this agreement in writing at any time.**
 
-  You may also want to:
-
-  1. Add the decision-maker as an emergency contact with the children's school, doctor, and childcare provider.
-  1. Give the decision maker important documents your children have, like birth certificates, insurance cards, and school or medical records.
-  
-  This authorization does not allow the new decision-maker to make decisions about abortion, your rights as a parent, or about the marriage or adoption of your children.
-  
-  You can cancel the agreement in writing at any time.
-
-help: |
-  You do not need to state why you are going out of the country, or documentation if you are undergoing a surgery. 
 ---
 template: longer_than_year_template
 subject: |
-  Need a decision maker for longer than one year?
+  Need a decision-maker for longer than one year?
 content: |
-  If you need someone to take care of your child for more than 1 year, a lawyer may be able to help you instead. Leaving children with a non-parent for a long time can affect parental rights, so think about getting legal advice.
+  If you are in the military, you may **continue** with this interview.
+  
+  If you are not in the military and need someone to take care of your child for more than 1 year, a lawyer may be able to help you instead. 
 
   ${ btn_legal_services } 
+---
+id: nondelegable decisions notice
+continue button field: nondelegable_decisions_notice
+question: |
+  Some decisions cannot be shared
+subquestion: |
+  This form cannot give anyone the right to agree to:
+
+  * Your child's marriage or adoption
+  * An abortion for your child
+  * Ending your rights as a parent
+
+  **Those decisions stay with you.**
 ---
 id: notary
 continue button field: notary
