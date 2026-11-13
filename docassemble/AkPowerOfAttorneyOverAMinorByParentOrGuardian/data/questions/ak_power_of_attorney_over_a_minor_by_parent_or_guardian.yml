@@ -241,18 +241,24 @@ code: |
   # Avoid storing data
   ak_power_of_attorney_over_a_minor_by_parent_or_guardian_download_plain
 ---
+code: |
+  btn_legal_services = '<a href="https://courts.alaska.gov/shc/lawyer.htm" target="_blank" class="btn btn-info">Find a Lawyer</a>'
+---
 id: Alaska_power_of_attorney_over_a_minor_by_parent_or_guardian
 continue button field: ak_power_of_attorney_over_a_minor_by_parent_or_guardian_intro
 question: |
-  Alaska power of attorney over a minor by parent or guardian
+  What does this interview do?
 subquestion: |
-  This form helps a parent or guardian in Alaska let a family member or other person temporarily make important decisions for their children by making a document called "Alaska power of attorney over a minor by parent or guardian".
+  This interview helps you let a family member or another person temporarily make important decisions for your children. It can also make the form called "Alaska Power of Attorney Over a Minor by Parent or Guardian".
 
-  For example, if you are a parent and need to leave the United States, the person you choose can make decisions about your children's medical situations, schools, and other situations.
+  ### Who can use this form?
 
-  You do not need to go to court to use this form, so it may be a good alternative to a guardianship or custody case.
+  * If you will be out of the country.
+  * If you will be undergoing surgery.
+  * You will be on military duty.
 
-  Leaving children with a non-parent for a long time can affect parental rights, so think about getting legal advice.
+  ${ collapse_template(longer_than_year_template) }
+
 
   :clock: Most people take about 15 minutes to finish this form.[BR]
   :lock: This tool will **not** save your information. If you close this page you may have to start this form all over again.
@@ -280,6 +286,17 @@ subquestion: |
   This authorization does not allow the new decision-maker to make decisions about abortion, your rights as a parent, or about the marriage or adoption of your children.
   
   You can cancel the agreement in writing at any time.
+
+help: |
+  You do not need to state why you are going out of the country, or documentation if you are undergoing a surgery. 
+---
+template: longer_than_year_template
+subject: |
+  Need a decision maker for longer than one year?
+content: |
+  If you need someone to take care of your child for more than 1 year, a lawyer may be able to help you instead. Leaving children with a non-parent for a long time can affect parental rights, so think about getting legal advice.
+
+  ${ btn_legal_services } 
 ---
 id: notary
 continue button field: notary
