@@ -255,7 +255,7 @@ continue button field: ak_power_of_attorney_over_a_minor_by_parent_or_guardian_i
 question: |
   What does this interview do?
 subquestion: |
-  This interview helps you fill out a form that lets another adult {temporarily} make decisions for your children. You do not need to go to court. We will walk you through each step. 
+  This interview helps a parent or guardian fill out a form that lets another adult {temporarily} make decisions for your children. You do not need to go to court. We will walk you through each step. 
 
   #### What you will need
 
@@ -280,7 +280,7 @@ template: longer_than_year_template
 subject: |
   Need a decision-maker for longer than one year?
 content: |
-  If you are in the military, you may **continue** with this interview.
+  If you are in the military, you may continue with this interview.
   
   If you are not in the military and need someone to take care of your child for more than 1 year, a lawyer may be able to help you instead. 
 
